@@ -23,29 +23,19 @@ go run . ~/Music
 
 ## Keys
 
-| Key | Action |
-| --- | --- |
-| `enter` / `l` | play selected |
-| `a` | add to queue |
-| `d` | remove from queue |
-| `s` | shuffle-play this folder |
-| `A` | play all (folder order) |
-| `n` | next (random if queue empty) |
-| `p` | previous track |
-| `space` | pause / resume |
-| `-` / `=` | volume down / up |
-| `backspace` / `h` | up one directory |
-| `j` / `k` / arrows | navigate |
-| `/` | filter |
-| `?` | toggle help |
-| `q` | quit |
-
-## Cover art
-
-Cover art renders with chafa symbols by default. For higher quality in
-supported terminals:
-
-```sh
-KHZGO_ART=kitty go run . ~/Music   # kitty graphics protocol
-KHZGO_ART=sixel go run . ~/Music   # sixel
-```
+| Key                | Action                       |
+| ------------------ | ---------------------------- |
+| `enter` / `l`      | play selected                |
+| `a`                | add to queue                 |
+| `d`                | remove from queue            |
+| `s`                | shuffle-play this folder     |
+| `A`                | play all (folder order)      |
+| `n`                | next (random if queue empty) |
+| `p`                | previous track               |
+| `space`            | pause / resume               |
+| `-` / `=`          | volume down / up             |
+| `backspace` / `h`  | up one directory             |
+| `j` / `k` / arrows | navigate                     |
+| `/`                | filter                       |
+| `?`                | toggle help                  |
+| `q`                | quit                         |
