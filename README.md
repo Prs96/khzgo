@@ -18,7 +18,7 @@ A minimal terminal music player. Browse your library, queue tracks, and play thr
 ## Build & run
 
 ```sh
-git clone <repo-url>
+git clone https://github.com/Prs96/khzgo.git
 cd khzgo
 go build
 ./khzgo ~/Music
