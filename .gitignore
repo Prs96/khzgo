@@ -1,0 +1,12 @@
+# binary
+/khzgo
+
+# test artifacts
+*.test
+*.out
+
+# editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
