@@ -10,12 +10,21 @@ A minimal terminal music player. Browse your library, queue tracks, and play thr
 
 ## Requirements
 
-- Go 1.21+
+- Go 1.26+
 - [mpv](https://mpv.io/)
 - [ffmpeg](https://ffmpeg.org/) (cover art extraction)
 - [chafa](https://hpjansson.org/chafa/) (cover art rendering)
 
-## Usage
+## Build & run
+
+```sh
+git clone <repo-url>
+cd khzgo
+go build
+./khzgo ~/Music
+```
+
+Or skip the binary and run directly:
 
 ```sh
 go run . ~/Music
