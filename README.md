@@ -20,20 +20,7 @@ without `chafa`/`ffmpeg`).
 go install github.com/Prs96/khzgo@latest
 ```
 
-**Release binaries**: grab a tarball for linux/amd64 or linux/arm64 from the
-[releases page](https://github.com/Prs96/khzgo/releases), extract, and put
-`khzgo` on your `PATH`.
-
-**Debian / Ubuntu**: download the `.deb` from the releases page:
-
-```sh
-sudo dpkg -i khzgo_*_linux_amd64.deb
-```
-
-**Arch Linux (AUR)**: install `khzgo` (builds from source) or `khzgo-bin`
-(prebuilt) with your AUR helper.
-
-## Build from source
+**Build from source**:
 
 ```sh
 git clone https://github.com/Prs96/khzgo.git
@@ -42,11 +29,8 @@ go build
 ./khzgo ~/Music
 ```
 
-Or skip the binary and run directly:
-
-```sh
-go run . ~/Music
-```
+Prebuilt linux/amd64 and linux/arm64 tarballs are also available on the
+[releases page](https://github.com/Prs96/khzgo/releases).
 
 Run `khzgo` with no arguments to start in `~/Music` when it exists, otherwise
 in the current directory. Use `-h` for flags and `-v` for the version.
