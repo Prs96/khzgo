@@ -38,6 +38,7 @@ type model struct {
 	queue  []string
 	volume float64
 
+	repeat  bool
 	history []string
 
 	showBindings bool
@@ -64,11 +65,25 @@ type mpvEventMsg player.Event
 
 func initialModel(mpv *player.MPV, startDir string) model {
 	p := progress.New(progress.WithGradient(ui.ProgressStart, ui.ProgressEnd))
+	st := loadSavedState(startDir)
+
+	b := browser.New(startDir, st.Dir).SetQueued(st.Queue)
+	if st.Current != "" {
+		b = b.SetNowPlaying(st.Current)
+	}
+
 	return model{
 		mpv:      mpv,
 		status:   "idle",
-		browser:  browser.New(startDir),
+		queue:    st.Queue,
+		history:  st.History,
+		volume:   st.Volume,
+		repeat:   st.Repeat,
+		current:  st.Current,
+		pos:      st.Position,
+		paused:   st.Paused,
 		progress: p,
+		browser:  b,
 	}
 }
 
@@ -77,7 +92,52 @@ func (m model) Init() tea.Cmd {
 	if c := m.mpvEventCmd(); c != nil {
 		cmds = append(cmds, c)
 	}
+	if c := m.resumeCmd(); c != nil {
+		cmds = append(cmds, c)
+	}
 	return tea.Batch(cmds...)
+}
+
+func (m model) resumeCmd() tea.Cmd {
+	if m.mpv == nil || m.current == "" {
+		return nil
+	}
+
+	cur := m.current
+	pos := m.pos
+	paused := m.paused
+	vol := m.volume
+	rep := m.repeat
+
+	return func() tea.Msg {
+		if vol > 0 {
+			_ = m.mpv.SetVolume(int(vol))
+		}
+		if rep {
+			_ = m.mpv.SetLoopFile(true)
+		}
+
+		if pos > 0 {
+			_ = m.mpv.SetStart(pos)
+		}
+		err := m.mpv.LoadFile(cur)
+		if err != nil {
+			_ = m.mpv.ClearStart()
+			return nil
+		}
+		if paused {
+			_ = m.mpv.SetPause(true)
+		}
+
+		for i := 0; i < 60; i++ {
+			if _, err := m.mpv.GetProperty("time-pos"); err == nil {
+				break
+			}
+			time.Sleep(50 * time.Millisecond)
+		}
+		_ = m.mpv.ClearStart()
+		return nil
+	}
 }
 
 func (m model) mpvEventCmd() tea.Cmd {
@@ -218,6 +278,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if !m.browser.IsFiltering() {
 				return m.skipPrev()
 			}
+		case "<":
+			if !m.browser.IsFiltering() {
+				return m.seekBy(-10)
+			}
+		case ">":
+			if !m.browser.IsFiltering() {
+				return m.seekBy(10)
+			}
+		case "x":
+			if !m.browser.IsFiltering() {
+				return m.stop()
+			}
+		case "r":
+			if !m.browser.IsFiltering() {
+				return m.toggleRepeat()
+			}
+		case "D":
+			if !m.browser.IsFiltering() && len(m.queue) > 0 {
+				m.queue = nil
+				m.browser = m.browser.SetQueued(m.queue)
+			}
+			return m, nil
 		case " ":
 			if m.mpv == nil {
 				return m, nil
@@ -322,6 +404,10 @@ func (m model) View() string {
 	if m.duration == 0 {
 		state = "idle"
 	}
+	stateLine := ui.TrackTitle.Render(track) + "  " + ui.TrackState.Render("["+strings.ToUpper(state)+"]")
+	if m.repeat {
+		stateLine += " " + ui.TrackState.Render("[REPEAT]")
+	}
 
 	var frac float64
 	if m.duration > 0 {
@@ -336,7 +422,7 @@ func (m model) View() string {
 	m.progress.Width = max(18, min(metaWidth-6, 36))
 	trackInfoInner := lipgloss.JoinVertical(lipgloss.Center,
 		ui.SectionLabel.Render("NOW PLAYING"),
-		ui.TrackTitle.Render(track)+"  "+ui.TrackState.Render("["+strings.ToUpper(state)+"]"),
+		stateLine,
 		ui.DimText.Render(trackLocation(m.current)),
 		m.progress.ViewAs(frac),
 		ui.TimeLabel.Render(fmtDuration(m.pos)+" / "+fmtDuration(m.duration)),
@@ -360,7 +446,7 @@ func (m model) View() string {
 		body += "\n" + ui.ErrorText.Render("error: "+m.err.Error())
 	}
 
-	help := ui.StatusBar.Render("enter play   a queue   d dequeue   n/p next/prev   s shuffle   A play all   -/= volume   ? keys   q quit")
+	help := ui.StatusBar.Render("enter play   n/p next/prev   </> seek   -/= volume   ? keys   q quit")
 	return body + "\n" + help
 }
 
@@ -461,6 +547,48 @@ func (m model) skipPrev() (model, tea.Cmd) {
 	return m.startTrack(prev)
 }
 
+func (m model) seekBy(delta float64) (model, tea.Cmd) {
+	if m.mpv == nil || m.duration == 0 {
+		return m, nil
+	}
+	if err := m.mpv.SeekRelative(delta); err != nil {
+		m.err = err
+	}
+	return m, nil
+}
+
+func (m model) stop() (model, tea.Cmd) {
+	if m.mpv != nil {
+		if err := m.mpv.Stop(); err != nil {
+			m.err = err
+			return m, nil
+		}
+	}
+	m.current = ""
+	m.cover = ""
+	m.coverKey = ""
+	m.coverPending = false
+	m.pos = 0
+	m.duration = 0
+	m.paused = false
+	m.status = "stopped"
+	m.browser = m.browser.SetNowPlaying("")
+	return m, nil
+}
+
+func (m model) toggleRepeat() (model, tea.Cmd) {
+	if m.mpv == nil {
+		return m, nil
+	}
+	next := !m.repeat
+	if err := m.mpv.SetLoopFile(next); err != nil {
+		m.err = err
+		return m, nil
+	}
+	m.repeat = next
+	return m, nil
+}
+
 func (m model) startTrack(path string) (model, tea.Cmd) {
 	m.cover = ""
 	m.coverKey = ""
@@ -516,11 +644,15 @@ func bindingsView(width, height int) string {
 		{"A", "play all (folder order)"},
 		{"n", "next (random if queue empty)"},
 		{"p", "previous track"},
+		{"< / >", "seek backward / forward 10s"},
+		{"x", "stop playback"},
+		{"r", "toggle repeat track"},
+		{"D", "clear queue"},
 		{"space", "pause / resume"},
 		{"- / =", "volume down / up"},
 		{"backspace / h", "up one directory"},
 		{"j / k / arrows", "navigate"},
-		{"/", "filter"},
+		{"/", "filter (searches subfolders)"},
 		{"?", "toggle help"},
 		{"q", "quit"},
 	}
@@ -754,9 +886,14 @@ func main() {
 	}
 	defer mpv.Close()
 
-	p := tea.NewProgram(initialModel(mpv, startDir), tea.WithAltScreen())
-	if _, err := p.Run(); err != nil {
-		fmt.Println("error running program:", err)
+	finalModel, runErr := tea.NewProgram(initialModel(mpv, startDir), tea.WithAltScreen()).Run()
+	if finalModel != nil {
+		if m, ok := finalModel.(model); ok {
+			saveState(m)
+		}
+	}
+	if runErr != nil {
+		fmt.Println("error running program:", runErr)
 		os.Exit(1)
 	}
 }

@@ -51,3 +51,33 @@ func Scan(dir string) ([]Entry, error) {
 
 	return append(dirs, files...), nil
 }
+
+func ScanRecursive(root string) ([]Entry, error) {
+	var files []Entry
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			if path == root {
+				return err
+			}
+			return nil
+		}
+		name := d.Name()
+		if d.IsDir() {
+			if path != root && strings.HasPrefix(name, ".") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if strings.HasPrefix(name, ".") || !IsAudioFile(name) {
+			return nil
+		}
+		files = append(files, Entry{Name: name, Path: path})
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
+	return files, nil
+}

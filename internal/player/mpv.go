@@ -8,6 +8,7 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"strconv"
 	"sync"
 	"time"
 )
@@ -186,6 +187,36 @@ func (m *MPV) SetVolume(v int) error {
 
 func (m *MPV) Seek(seconds float64) error {
 	_, err := m.send(command{Command: []interface{}{"seek", seconds, "absolute"}})
+	return err
+}
+
+func (m *MPV) SeekRelative(seconds float64) error {
+	_, err := m.send(command{Command: []interface{}{"seek", seconds, "relative"}})
+	return err
+}
+
+func (m *MPV) Stop() error {
+	_, err := m.send(command{Command: []interface{}{"stop"}})
+	return err
+}
+
+func (m *MPV) SetStart(seconds float64) error {
+	val := strconv.FormatFloat(seconds, 'f', 3, 64)
+	_, err := m.send(command{Command: []interface{}{"set_property", "start", val}})
+	return err
+}
+
+func (m *MPV) ClearStart() error {
+	_, err := m.send(command{Command: []interface{}{"set_property", "start", "none"}})
+	return err
+}
+
+func (m *MPV) SetLoopFile(loop bool) error {
+	val := interface{}("no")
+	if loop {
+		val = "inf"
+	}
+	_, err := m.send(command{Command: []interface{}{"set_property", "loop-file", val}})
 	return err
 }
 
