@@ -9,7 +9,7 @@ license=('MIT')
 depends=('glibc' 'mpv' 'chafa' 'ffmpeg')
 makedepends=('go')
 source=("$pkgname-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('06ce2e39060c099c090f1b1fce603bd194487e8539ee80c1d74e43942467774e')
 
 build() {
   cd "$pkgname-$pkgver"
