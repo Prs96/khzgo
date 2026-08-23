@@ -11,7 +11,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"khzgo/internal/ui"
+	"github.com/Prs96/khzgo/internal/ui"
 )
 
 type playState struct {

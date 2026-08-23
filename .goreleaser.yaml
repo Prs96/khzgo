@@ -1,0 +1,59 @@
+version: 2
+
+project_name: khzgo
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm64
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w -X main.version={{.Version}}
+
+archives:
+  - formats: [tar.gz]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+    files:
+      - README.md
+      - LICENSE
+
+checksum:
+  name_template: checksums.txt
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - "^docs:"
+      - "^readme:"
+      - "^clean:"
+
+nfpms:
+  - package_name: khzgo
+    file_name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Arch }}"
+    vendor: Prs96
+    homepage: https://github.com/Prs96/khzgo
+    maintainer: Pranav <Prs96@users.noreply.github.com>
+    description: Minimal terminal music player with cover art
+    license: MIT
+    formats:
+      - deb
+    dependencies:
+      - mpv
+      - chafa
+      - ffmpeg
+    contents:
+      - src: README.md
+        dst: /usr/share/doc/khzgo/README.md
+      - src: LICENSE
+        dst: /usr/share/doc/khzgo/LICENSE

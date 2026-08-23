@@ -1,0 +1,20 @@
+# Maintainer: Pranav <Prs96@users.noreply.github.com>
+pkgname=khzgo-bin
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Minimal terminal music player with cover art (prebuilt binary)"
+arch=('x86_64' 'aarch64')
+url="https://github.com/Prs96/khzgo"
+license=('MIT')
+depends=('glibc' 'mpv' 'chafa' 'ffmpeg')
+provides=('khzgo')
+conflicts=('khzgo')
+source_x86_64=("$pkgname-$pkgver-x86_64.tar.gz::$url/releases/download/v$pkgver/khzgo_${pkgver}_linux_x86_64.tar.gz")
+source_aarch64=("$pkgname-$pkgver-aarch64.tar.gz::$url/releases/download/v$pkgver/khzgo_${pkgver}_linux_arm64.tar.gz")
+sha256sums_x86_64=('SKIP')
+sha256sums_aarch64=('SKIP')
+
+package() {
+  install -Dm755 khzgo "$pkgdir/usr/bin/khzgo"
+  install -Dm644 README.md "$pkgdir/usr/share/doc/$pkgname/README.md"
+}

@@ -8,14 +8,32 @@ A minimal terminal music player. Browse your library, queue tracks, and play thr
 
 ![khzgo](docs/screenshot.png)
 
-## Requirements
+## Install
 
-- Go 1.26+
-- [mpv](https://mpv.io/)
-- [ffmpeg](https://ffmpeg.org/) (cover art extraction)
-- [chafa](https://hpjansson.org/chafa/) (cover art rendering)
+Runtime dependencies: `mpv`, `ffmpeg`, `chafa` — khzgo checks for them at
+startup and tells you if anything is missing (cover art degrades gracefully
+without `chafa`/`ffmpeg`).
 
-## Build & run
+**go install** (requires Go 1.26+):
+
+```sh
+go install github.com/Prs96/khzgo@latest
+```
+
+**Release binaries**: grab a tarball for linux/amd64 or linux/arm64 from the
+[releases page](https://github.com/Prs96/khzgo/releases), extract, and put
+`khzgo` on your `PATH`.
+
+**Debian / Ubuntu**: download the `.deb` from the releases page:
+
+```sh
+sudo dpkg -i khzgo_*_linux_amd64.deb
+```
+
+**Arch Linux (AUR)**: install `khzgo` (builds from source) or `khzgo-bin`
+(prebuilt) with your AUR helper.
+
+## Build from source
 
 ```sh
 git clone https://github.com/Prs96/khzgo.git
@@ -29,6 +47,9 @@ Or skip the binary and run directly:
 ```sh
 go run . ~/Music
 ```
+
+Run `khzgo` with no arguments to start in `~/Music` when it exists, otherwise
+in the current directory. Use `-h` for flags and `-v` for the version.
 
 ## Keys
 
@@ -59,3 +80,7 @@ On quit, khzgo saves your session to `~/.config/khzgo/state.json` with last
 folder, queue, history, volume, repeat mode, and the current track with its
 position. The next launch restores all of it and resumes playback where you
 left off (paused tracks come back paused).
+
+## License
+
+[MIT](LICENSE)

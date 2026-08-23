@@ -1,9 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -11,10 +13,10 @@ import (
 	"github.com/charmbracelet/bubbles/progress"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"khzgo/internal/art"
-	"khzgo/internal/browser"
-	"khzgo/internal/player"
-	"khzgo/internal/ui"
+	"github.com/Prs96/khzgo/internal/art"
+	"github.com/Prs96/khzgo/internal/browser"
+	"github.com/Prs96/khzgo/internal/player"
+	"github.com/Prs96/khzgo/internal/ui"
 )
 
 type tickMsg time.Time
@@ -870,16 +872,103 @@ func max(a, b int) int {
 	return b
 }
 
-func main() {
-	startDir := "."
-	if len(os.Args) > 1 {
-		startDir = os.Args[1]
+var version = "dev"
+
+func printUsage() {
+	fmt.Fprint(os.Stderr, `khzgo - terminal music player
+
+Browse your library, queue tracks, and play through mpv with cover
+art rendered right in the terminal.
+
+usage: khzgo [flags] [directory]
+
+If no directory is given, khzgo starts in ~/Music when it exists,
+otherwise in the current directory.
+
+flags:
+`)
+	flag.PrintDefaults()
+}
+
+func defaultStartDir(arg string) string {
+	if arg != "" {
+		return arg
 	}
+	if home, err := os.UserHomeDir(); err == nil {
+		music := filepath.Join(home, "Music")
+		if dirExists(music) {
+			return music
+		}
+	}
+	return "."
+}
+
+func socketPath() (string, error) {
+	base := os.Getenv("XDG_RUNTIME_DIR")
+	if base == "" {
+		base = os.TempDir()
+	}
+	return filepath.Join(base, fmt.Sprintf("khzgo-%d.sock", os.Getpid())), nil
+}
+
+func checkDependencies() {
+	missing := false
+	for _, tool := range []string{"mpv", "chafa", "ffmpeg"} {
+		if _, err := exec.LookPath(tool); err == nil {
+			continue
+		}
+		switch tool {
+		case "mpv":
+			fmt.Fprintf(os.Stderr, "error: mpv is required but was not found in PATH\n")
+			missing = true
+		case "chafa":
+			fmt.Fprintf(os.Stderr, "warning: chafa not found in PATH — cover art is disabled\n")
+		case "ffmpeg":
+			fmt.Fprintf(os.Stderr, "warning: ffmpeg not found in PATH — embedded cover art unavailable\n")
+		}
+	}
+	if missing {
+		os.Exit(1)
+	}
+}
+
+func main() {
+	var showVersion, showHelp bool
+	flag.BoolVar(&showVersion, "v", false, "print version and exit")
+	flag.BoolVar(&showVersion, "version", false, "print version and exit")
+	flag.BoolVar(&showHelp, "h", false, "show help")
+	flag.BoolVar(&showHelp, "help", false, "show help")
+	flag.Usage = printUsage
+	flag.Parse()
+
+	if len(flag.Args()) > 1 {
+		printUsage()
+		os.Exit(2)
+	}
+
+	if showHelp {
+		printUsage()
+		return
+	}
+	if showVersion {
+		fmt.Println("khzgo " + version)
+		return
+	}
+
+	checkDependencies()
+
+	startDir := defaultStartDir(flag.Arg(0))
 	if abs, err := filepath.Abs(startDir); err == nil {
 		startDir = abs
 	}
 
-	mpv, err := player.Start("/tmp/mmp-mpv-socket")
+	sockPath, err := socketPath()
+	if err != nil {
+		fmt.Println("error creating mpv socket path:", err)
+		os.Exit(1)
+	}
+
+	mpv, err := player.Start(sockPath)
 	if err != nil {
 		fmt.Println("error starting mpv:", err)
 		os.Exit(1)
